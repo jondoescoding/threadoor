@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+langchain = "*"
+pygpt4all = "*"
+pyllamacpp = "*"
+python-dotenv = "*"
+pymupdf = "*"
+beautifulsoup4 = "*"
+"pdfminer.six" = "*"
+chromadb = "*"
+gptcache = "*"
+llama-cpp-python = "*"
+pdfplumber = "*"
+tiktoken = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
