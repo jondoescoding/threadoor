@@ -11,8 +11,8 @@ from langchain.vectorstores import Chroma
 from langchain.embeddings import LlamaCppEmbeddings
 from langchain.docstore.document import Document
 # UTILIES
-from constants import CHROMA_SETTINGS
-from utils import get_logger
+from privateGPT.constants import CHROMA_SETTINGS
+from privateGPT.utils import get_logger
 
 # Loading environment variables
 load_dotenv()

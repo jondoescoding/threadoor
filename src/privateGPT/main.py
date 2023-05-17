@@ -14,7 +14,7 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 # Cache -> Langchain + GPTCache
 from langchain.cache import GPTCache
 from gptcache.adapter.api import init_similar_cache
-from constants import CHROMA_SETTINGS
+from privateGPT.constants import CHROMA_SETTINGS
 
 # Loading environment variables
 load_dotenv()
