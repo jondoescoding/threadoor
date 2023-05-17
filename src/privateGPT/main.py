@@ -7,20 +7,20 @@ import langchain
 from langchain.chains import RetrievalQA
 from langchain import PromptTemplate
 from langchain.chains import LLMChain
-from langchain.embeddings import LlamaCppEmbeddings
+from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Chroma
-from langchain.llms import GPT4All, LlamaCpp
+from langchain.llms import GPT4All
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 # Cache -> Langchain + GPTCache
 from langchain.cache import GPTCache
 from gptcache.adapter.api import init_similar_cache
-from privateGPT.constants import CHROMA_SETTINGS
+from constants import CHROMA_SETTINGS
 
 # Loading environment variables
 load_dotenv()
 
 # Embeddings
-llama_embeddings_model = os.environ.get("LLAMA_EMBEDDINGS_MODEL")
+embeddings_model = os.environ.get("EMBEDDINGS_MODEL_NAME")
 # VectorStore
 persist_directory = os.environ.get('PERSIST_DIRECTORY') 
 # LLM Information
@@ -30,11 +30,11 @@ model_n_ctx = int(os.environ.get('MODEL_N_CTX'))
 chunk_size = int(os.environ.get('CHUNK_SIZE'))
 
 def main():
-    # LLMM Embeddings
-    llama = LlamaCppEmbeddings(model_path=llama_embeddings_model, n_ctx=model_n_ctx)
+    # Hugging Face Embeddings
+    huggingFaceEmbeddings = HuggingFaceEmbeddings(model_name=embeddings_model)
     
     # Database
-    db = Chroma(persist_directory=persist_directory, embedding_function=llama, client_settings=CHROMA_SETTINGS)
+    db = Chroma(persist_directory=persist_directory, embedding_function=huggingFaceEmbeddings, client_settings=CHROMA_SETTINGS)
     retriever = db.as_retriever()
     
     # Prepare the LLM
