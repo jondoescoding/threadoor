@@ -12,7 +12,6 @@ import helper as hp
 # ENVIRONMENT VARIABLES
 OPENAI_TOKEN = os.environ.get('openAi')
 
-
 # Setting up LLMS
 
 # OpenAi
