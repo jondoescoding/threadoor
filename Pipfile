@@ -17,6 +17,7 @@ llama-cpp-python = "*"
 pdfplumber = "*"
 tiktoken = "*"
 sentence-transformers = "*"
+unstructured = "*"
 
 [dev-packages]
 

@@ -17,6 +17,8 @@ from langchain.document_loaders import (
     UnstructuredODTLoader,
     UnstructuredPowerPointLoader,
     UnstructuredWordDocumentLoader,
+    NotionDirectoryLoader,
+    ObsidianLoader
 )
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma

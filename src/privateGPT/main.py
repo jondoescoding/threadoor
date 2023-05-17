@@ -7,7 +7,7 @@ import langchain
 from langchain.chains import RetrievalQA
 from langchain import PromptTemplate
 from langchain.chains import LLMChain
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.embeddings import HuggingFaceEmbeddings, LlamaCppEmbeddings
 from langchain.vectorstores import Chroma
 from langchain.llms import GPT4All
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -21,6 +21,7 @@ load_dotenv()
 
 # Embeddings
 embeddings_model = os.environ.get("EMBEDDINGS_MODEL_NAME")
+llama_embeddings_model = os.environ.get("LLAMA_EMBEDDINGS_MODEL")
 # VectorStore
 persist_directory = os.environ.get('PERSIST_DIRECTORY') 
 # LLM Information
@@ -32,6 +33,9 @@ chunk_size = int(os.environ.get('CHUNK_SIZE'))
 def main():
     # Hugging Face Embeddings
     huggingFaceEmbeddings = HuggingFaceEmbeddings(model_name=embeddings_model)
+
+    # LLama Embeddings
+    llama = LlamaCppEmbeddings(model_path=llama_embeddings_model, n_ctx=model_n_ctx)
     
     # Database
     db = Chroma(persist_directory=persist_directory, embedding_function=huggingFaceEmbeddings, client_settings=CHROMA_SETTINGS)
