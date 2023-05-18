@@ -37,7 +37,6 @@ model_n_ctx = os.environ.get('MODEL_N_CTX')
 chunk_size = int(os.environ.get('CHUNK_SIZE'))
 chunk_overlap = int(os.environ.get('CHUNK_OVERLAP'))
 
-
 # Map file extensions to document loaders and their arguments
 LOADER_MAPPING = {
     ".csv": (CSVLoader, {}),

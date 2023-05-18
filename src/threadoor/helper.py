@@ -1,7 +1,7 @@
 # Python 
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, List, Union
+from typing import List
 # LangChain
 from langchain import LLMChain, llms
 from langchain import PromptTemplate
