@@ -18,6 +18,7 @@ pdfplumber = "*"
 tiktoken = "*"
 sentence-transformers = "*"
 unstructured = "*"
+huggingface-hub = "*"
 
 [dev-packages]
 
