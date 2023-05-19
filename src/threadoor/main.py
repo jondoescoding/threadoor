@@ -2,8 +2,6 @@
 import os
 # Langchain
 from langchain.llms import *
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
 from langchain.chains import SequentialChain
 # Custom Utilities
 import helper as hp 
@@ -15,10 +13,7 @@ HUGGINGFACE_TOKEN = os.environ.get('huggingFace')
 # Setting up LLMS
 
 # OpenAi
-#llm = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=500)
-
-# Testing HuggingFaceHub
-llm = HuggingFaceHub(repo_id=)
+llm = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=500)
 
 # ROLES BEGIN HERE -> Writer, Editor, SEO, Writer, Prompt Engineer (Optional) 
 
@@ -117,7 +112,7 @@ chain = SequentialChain(
 
 print(
     chain({
-        "topic":"LLM",
-        "expertise":"PHD Computer Science"
+        "topic":"What are algorithms",
+        "expertise":"Computer Science"
     })
 )

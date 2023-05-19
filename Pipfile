@@ -19,6 +19,7 @@ tiktoken = "*"
 sentence-transformers = "*"
 unstructured = "*"
 huggingface-hub = "*"
+transformers = "*"
 
 [dev-packages]
 
