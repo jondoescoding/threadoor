@@ -1,15 +1,8 @@
 # Midjourney - Prompt Length
 
-Created time: May 9, 2023 6:53 PM
-Last edited time: May 9, 2023 11:15 PM
-Owner: Jon
-Verification: Verified
+## Understanding Prompts In Midjourney
 
----
-
-# Understanding Prompts In Midjourney
-
-## The concept of “Zone Of Influence”
+### The concept of “Zone Of Influence”
 
 - In midjourney versions 1-4, niji and test all have a system where the more words there will be a less likely chance of those words playing a role in the final generation of the image.
     - You can think of it like this where the closer you get to **60+ words**, the amount of influence each word would have over the image to be generated will be extremely low.
@@ -25,7 +18,7 @@ Verification: Verified
         - Words 70+: Just no.
     - In the version 5 series of MJ the influence of the words isn’t determined by **WHERE** the words are in relation to the start of the prompt but instead it is determined by its *strength*
 
-## Combination & Permutation
+### Combination & Permutation
 
 - A permutation refers to a type of mathematical technique which determines the number of possible arrangements of a set.
     - This set can be a number, arbitrary objects etc.
@@ -41,13 +34,13 @@ Verification: Verified
     - In version 5 of MJ the permutations concept is akin to a game of football where there are multiple coaches arguing what the players should do
     - In V4 more words means that they are getting lost in a vast ocean of permutations and you’ll never be able to see how they influence the image
 
-## Word Salad
+### Word Salad
 
 - You’ll often see prompts written out in a series of words almost as if a foreigner is trying to speak our native tongue
     - Good example is: banana on table, hyper realistic, ue4, dynamic angle, dusty dark room
 - Prompts like these would work in MJ4 and under but in MJ5 there is some natural language processing at play so its best to play around writing how we normally do in our day to day.
 
-## Delimiters
+### Delimiters
 
 - How can I combat this issue and get my prompts to show as much as possible?
     - You can use a delimiter or ::
