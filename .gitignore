@@ -161,6 +161,8 @@ cython_debug/
 #.idea/
 
 # My Files
+Pipfile
+Pipfile.lock
 .history
 .hypothesis
 db/
