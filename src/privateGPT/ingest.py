@@ -17,8 +17,6 @@ from langchain.document_loaders import (
     UnstructuredODTLoader,
     UnstructuredPowerPointLoader,
     UnstructuredWordDocumentLoader,
-    NotionDirectoryLoader,
-    ObsidianLoader
 )
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
@@ -40,7 +38,6 @@ chunk_overlap = int(os.environ.get('CHUNK_OVERLAP'))
 # Map file extensions to document loaders and their arguments
 LOADER_MAPPING = {
     ".csv": (CSVLoader, {}),
-    # ".docx": (Docx2txtLoader, {}),
     ".docx": (UnstructuredWordDocumentLoader, {}),
     ".enex": (EverNoteLoader, {}),
     ".eml": (UnstructuredEmailLoader, {}),
@@ -50,8 +47,7 @@ LOADER_MAPPING = {
     ".odt": (UnstructuredODTLoader, {}),
     ".pdf": (PDFMinerLoader, {}),
     ".pptx": (UnstructuredPowerPointLoader, {}),
-    ".txt": (TextLoader, {"encoding": "utf8"}),
-    # Add more mappings for other file extensions and loaders as needed
+    ".txt": (TextLoader, {"encoding": "utf8"})
 }
 
 # Loading Logger
