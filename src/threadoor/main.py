@@ -3,6 +3,8 @@ import os
 # Langchain
 from langchain.llms import *
 from langchain.chains import SequentialChain
+from langchain.document_loaders import UnstructuredMarkdownLoader
+from langchain.memory import SimpleMemory
 # Custom Utilities
 import helper as hp 
 
@@ -10,21 +12,25 @@ import helper as hp
 OPENAI_TOKEN = os.environ.get('openAi')
 HUGGINGFACE_TOKEN = os.environ.get('huggingFace')
 
-# Setting up LLMS
+# Gathering context
+filePath = r"C:\_CODING\PYTHON\PROJECTS\contentCreator\docs\toBeIngested\Midjourney_Prompt_Length.md"
+loader = UnstructuredMarkdownLoader(filePath)
+markDownFile = loader.load()
 
-# OpenAi
+
+# Setting up OpenAi
 llm = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=500)
 
-# ROLES BEGIN HERE -> Writer, Editor, SEO, Writer, Prompt Engineer (Optional) 
+# ROLES BEGIN HERE
 
 # Writer -> 1st
 writer = hp.Role(
     llm=llm,
     template="""
-    Role: You are a professional freelance copy writer. You have the ability to explain difficult topics down to their fundamentals using first principle thinking applying the Feynman Technique. Your tone is similar to the author Mark Manson.
-    Objective: Given an topic for a blog post you are to write a first draft of the target topic.
-    Topic: {topic}
-    Expertise: {expertise}
+    Role: You are a professional copywriter. You have the ability to explain difficult topics down to their fundamentals using first principle thinking applying the Feynman Technique.
+    Objective: For the given context rewrite a draft based on your role applying the specific style of writing.
+    Author's Writing Style: {writingStyle}
+    Context: {context}
     Draft:
     """
 )
@@ -68,7 +74,7 @@ production = hp.Role(
 writerChain = writer.createChain(
     llm=llm,
     promptTemplate=writer.setPromptTemplate(
-        ["topic", "expertise"],
+        ["context", "writingStyle"],
         template=writer.template
     ),
     output_key="draft"
@@ -102,17 +108,18 @@ productionChain = production.createChain(
 )
 
 # Running the chains
-chain = SequentialChain(
+response = SequentialChain(
+    memory=SimpleMemory(memories={"context":markDownFile}),
     chains=[
         writerChain, editorChain, seoChain, productionChain
     ],
-    input_variables=["topic", "expertise"],
-    output_variables=["final"]
+    input_variables=["writingStyle"],
+    output_variables=["final"],
+    verbose=True
 )
 
 print(
-    chain({
-        "topic":"What are algorithms",
-        "expertise":"Computer Science"
+    response({
+        "writingStyle":"Mark Manson"
     })
 )
