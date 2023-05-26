@@ -1,7 +1,7 @@
 # Python 
 import glob
 import os
-from pprint import pprint
+import datetime
 # Langchain
 from langchain.llms import *
 from langchain.chains import SequentialChain
@@ -12,8 +12,6 @@ import helper as hp
 
 # ENVIRONMENT VARIABLES
 OPENAI_TOKEN = os.environ.get('openAi')
-HUGGINGFACE_TOKEN = os.environ.get('huggingFace')
-
 
 # Set the directory path
 directory = r"C:\_CODING\PYTHON\PROJECTS\contentCreator\docs\toBeIngested"
@@ -119,7 +117,20 @@ response = SequentialChain(
     verbose=True
 )
 
-with open('thread.txt', 'w') as f:
+# Get the current date and time
+now = datetime.datetime.now()
+
+# Create a string with today's date in the format YYYY-MM-DD
+date_string = now.strftime('%Y-%m-%d')
+
+# Create a file with today's date in the name
+filename = f'{date_string}.txt'
+
+# Get the file name
+md_file_name = os.path.basename(md_file_path)
+
+# Writing to a file
+with open(f'{filename}_{md_file_name}.txt', 'w') as f:
     f.write(
         response(
             {
