@@ -166,8 +166,6 @@ Pipfile.lock
 .history
 .hypothesis
 db/
-docs/md/
-docs/pdf/
-docs/txt/
+docs/
 models/
 test/
