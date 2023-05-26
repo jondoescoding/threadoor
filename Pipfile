@@ -21,6 +21,7 @@ unstructured = "*"
 huggingface-hub = "*"
 transformers = "*"
 chainlit = "*"
+prompt-optimizer = "*"
 
 [dev-packages]
 
