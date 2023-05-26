@@ -1,5 +1,7 @@
 # Python 
+import glob
 import os
+from pprint import pprint
 # Langchain
 from langchain.llms import *
 from langchain.chains import SequentialChain
@@ -12,48 +14,56 @@ import helper as hp
 OPENAI_TOKEN = os.environ.get('openAi')
 HUGGINGFACE_TOKEN = os.environ.get('huggingFace')
 
-# Gathering context
-filePath = r"C:\_CODING\PYTHON\PROJECTS\contentCreator\docs\toBeIngested\Midjourney_Prompt_Length.md"
-loader = UnstructuredMarkdownLoader(filePath)
-markDownFile = loader.load()
 
+# Set the directory path
+directory = r"C:\_CODING\PYTHON\PROJECTS\contentCreator\docs\toBeIngested"
+
+# Get a list of all markdown files in the directory using glob
+md_files = glob.glob(directory + '/*.md')
+
+# Check if there is more than one markdown file in the directory
+if len(md_files) > 1:
+    raise Exception('There is more than one markdown file in the directory')
+
+# If there is exactly one markdown file, print its path
+elif len(md_files) == 1:
+    md_file_path = md_files[0]
+    print(f'The markdown file path is: {md_file_path}')
+    loader = UnstructuredMarkdownLoader(md_file_path)
+    markDownFile = loader.load()
+# If there are no markdown files, handle the empty directory case
+else:
+    raise Exception('The directory does not contain any markdown files')
 
 # Setting up OpenAi
 llm = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=500)
 
 # ROLES BEGIN HERE
 
-# Writer -> 1st
+# Writer
 writer = hp.Role(
     llm=llm,
     template="""
-    Role: You are a professional copywriter. You have the ability to explain difficult topics down to their fundamentals using first principle thinking applying the Feynman Technique.
-    Objective: For the given context rewrite a draft based on your role applying the specific style of writing.
-    Author's Writing Style: {writingStyle}
-    Context: {context}
+    ### Instructions ###
+    Role: The following is an agent which generates Twitter threads from raw notes. As if explaining the concept to a 10 year old, the agent should use only the information provided in the notes.
+    Format: Provide an explanation of the concept as a way of introducing the reader to the topic that will be discussed, illustrating the concept to a parallel in real life and and tying it to other points in the discussion. 
+    Voice and style guide: Use a {technique} writing style in {writerVoice}'s voice. Be conversational and use natural language.
+    Task: Based on the instructions given, rewrite the raw markdown notes into a Twitter Thread applying the specific voice and styling guide
+    Raw Notes: {notes}
     Draft:
+
     """
 )
 
-# Editor -> 2nd
+# Editor
 editor = hp.Role(
     llm=llm,
     template="""
-    Role: You are a professional Editor who was worked in  the online written industry for over 10 years. 
-    Objective: Given a draft for a blog post you are to provide a bulleted list of feedback and advice based on the area of expertise
+    Role: You are a professional Editor who was worked in the online written industry for over 10 years. 
+    Objective: Given a draft for a Twitter thread you are to provide a bulleted list of feedback addressing grammar, sentence structure, and if there are any areas within the draft where there is usage of technical terms of complex languages, re-write these sections in simpler words.
     Draft: {draft}
-    Feedback:
-    """
-)
+    Bullet List of Feedback:
 
-# SEO -> 3rd
-seo = hp.Role(
-    llm=llm,
-    template="""
-    Role: You are a professional SEO marketer who has been working for over 10 years.
-    Objective: Given a draft for a blog post, you are to provide a bulleted list feedback and advice on how to improve the SEO
-    Draft: {draft}
-    SEO-Feedback: 
     """
 )
 
@@ -61,11 +71,11 @@ production = hp.Role(
     llm=llm,
     template="""
     Role: You are a professional copywriter.
-    Objective: Given a blog draft you are exptected to use the feedback from an editor and changes to seo keywords to construct a blog post.
+    Objective: The goal is to construct a multi-tweet Twitter thread with no more than 15 tweets using feedback from an editor. Create a sense of curiosity and intrigue in my audience by introducing incomplete questions in the first tweet
     Draft: {draft}
     Edits: {edit}
-    Seo: {seo}
-    Final Blog:
+    The final twitter thread:
+
     """
 )
 
@@ -74,7 +84,7 @@ production = hp.Role(
 writerChain = writer.createChain(
     llm=llm,
     promptTemplate=writer.setPromptTemplate(
-        ["context", "writingStyle"],
+        ["notes", "technique", "writerVoice"],
         template=writer.template
     ),
     output_key="draft"
@@ -89,19 +99,10 @@ editorChain = editor.createChain(
     output_key="edit"
 )
 
-seoChain = seo.createChain(
-    llm=llm,
-    promptTemplate=seo.setPromptTemplate(
-        ["draft"],
-        template=seo.template
-    ),
-    output_key="seo"
-)
-
 productionChain = production.createChain(
     llm=llm,
     promptTemplate=production.setPromptTemplate(
-        ["draft", "edit", "seo"],
+        ["draft", "edit"],
         template=production.template
     ),
     output_key="final"
@@ -109,17 +110,20 @@ productionChain = production.createChain(
 
 # Running the chains
 response = SequentialChain(
-    memory=SimpleMemory(memories={"context":markDownFile}),
+    memory=SimpleMemory(memories={"notes":markDownFile}),
     chains=[
-        writerChain, editorChain, seoChain, productionChain
+        writerChain, editorChain, productionChain
     ],
-    input_variables=["writingStyle"],
+    input_variables=["technique", "writerVoice"],
     output_variables=["final"],
     verbose=True
 )
 
-print(
-    response({
-        "writingStyle":"Mark Manson"
-    })
-)
+with open('thread.txt', 'w') as f:
+    f.write(
+        response(
+            {
+                "technique":"persuasive",
+                "writerVoice":"Mark Manson"
+            })['final']
+    )
