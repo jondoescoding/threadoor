@@ -2,7 +2,7 @@
 
 ## Understanding Prompts In Midjourney
 
-### The concept of “Zone Of Influence”
+### The concept of:  “Zone Of Influence”
 
 - In midjourney versions 1-4, niji and test all have a system where the more words there will be a less likely chance of those words playing a role in the final generation of the image.
     - You can think of it like this where the closer you get to **60+ words**, the amount of influence each word would have over the image to be generated will be extremely low.
