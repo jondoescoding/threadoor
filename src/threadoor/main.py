@@ -155,6 +155,3 @@ with open('output.txt', 'w') as f:
         f.write(f"# Key: {key}\n")
         # Write the value with '# Value' prefix and newline character
         f.write(f"# Value:\n {value} \n")
-
-
-
