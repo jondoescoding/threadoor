@@ -34,88 +34,103 @@ else:
     raise Exception('The directory does not contain any markdown files')
 
 # Setting up OpenAi
-llm = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=500)
+llm = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=1000)
 
 # ROLES BEGIN HERE
 
-# Writer
-writer = hp.Role(
-    llm=llm,
+"""
+Threadoor 
+- Objective -> Take the notes I create from a file (markdown, txt, etc.) and convert them into a twitter thread.
+"""
+
+threadoor = hp.Role(
+    llm=OpenAI,
     template="""
-    ### Instructions ###
-    Role: The following is an agent which generates Twitter threads from raw notes. As if explaining the concept to a 10 year old, the agent should use only the information provided in the notes.
-    Format: Provide an explanation of the concept as a way of introducing the reader to the topic that will be discussed, illustrating the concept to a parallel in real life and and tying it to other points in the discussion. 
-    Voice and style guide: Use a {technique} writing style in {writerVoice}'s voice. Be conversational and use natural language.
-    Task: Based on the instructions given, rewrite the raw markdown notes into a Twitter Thread applying the specific voice and styling guide
-    Raw Notes: {notes}
-    Draft:
+    Role Description: You are a content writing agent that summarizes the main ideas for the given context in a Twitter thread format.
+    Goal: Summarize the main points and ideas of the given markdown notes in a Twitter thread format capturing the {noteStructure} of the notes using no hashtags. As if explaining the concept to a 10 year old, break down the notes into smaller and digestible tweets using only the information provided in the markdown notes. The thread's content should be formatted as such:
+        - Provide a simple explanation of the concept as an introduction to what will be discussed by writing clear and concise tweets for each point without altering the original meaning.
+        - Highlight the key concepts or the headings from the notes within each tweet.
+        - Illustrate the concept to an example in real life.
+        - Ensure a logical flow and coherence in the Twitter thread while maintaining the essence of the notes.
+    Markdown Notes: {mdNotes}
+    Twitter thread:
 
     """
 )
 
-# Editor
-editor = hp.Role(
+"""
+Hookoor
+- Objective: Using the written Twitter thread to generate 3 possible hook tweets to capture the attention of a potential reader
+"""
+
+hookoor = hp.Role(
     llm=llm,
     template="""
-    Role: You are a professional Editor who was worked in the online written industry for over 10 years. 
-    Objective: Given a draft for a Twitter thread you are to provide a bulleted list of feedback addressing grammar, sentence structure, and if there are any areas within the draft where there is usage of technical terms of complex languages, re-write these sections in simpler words.
-    Draft: {draft}
-    Bullet List of Feedback:
-
+    Role Description: You are a content writing agent that uses the main ideas from a given Twitter thread to generate a headliner.
+    The 5 elements of writing an effective headline are: Be CLEAR, not Clever, Be CLEAR, not Clever, Specify the WHAT, Specify the WHY, throw a curve ball. 
+    The 6 proven ways to write an engaging headline: Open with 1 strong, declarative sentence, Open with a thought-provoking question, Open with a controversial opinion, Open with a moment in time, Open with a vulnerable statement
+    Goal: Take all five elements of effective headline writing and one of the six proven ways to write an engaging headline and create three headlines that reflect the Twitter thread provided
+    Twitter Thread: {thread}
+    Headlines: 
     """
 )
 
-production = hp.Role(
+promptoor = hp.Role(
     llm=llm,
     template="""
-    Role: You are a professional copywriter.
-    Objective: The goal is to construct a multi-tweet Twitter thread with no more than 15 tweets using feedback from an editor. Create a sense of curiosity and intrigue in my audience by introducing incomplete questions in the first tweet
-    Draft: {draft}
-    Edits: {edit}
-    The final twitter thread:
-
+    Role: You are an agent who writes descriptive short text phrases which will used to generate images.
+    Format: (image we're prompting), (5 descriptive keywords or phrases), (art style), (artist name), (art medium)
+    Goal: Create a 60 word short text phrase depicting a furturistic scene based on the theme of a given Twitter Thread using the given Format. Here are some examples short text phrases:
+    Example 1: a commercial photograph of a burger with dripping hot sauce, natural light, hyper-detailed,
+    105 mm macro, shutter speed at 1/800 sec, ISO 6400, f/8 aperture, 8k, octane rendering
+    Example 2: a hyper-realistic image of kids happily playing on a wide green field, manual camera mode, ISO 400, shutter speed at 1/200, aperture f/4, sunny
+    Example 3: a full-body shot of a fashion model walking on a runway wearing modern streetwear, fierce face, shot on a mirrorless camera, continuous focus mode
+    Twitter Thread: {thread}
+    Generated text phrase: 
     """
 )
 
-# CHAINS BEGIN HERE
-
-writerChain = writer.createChain(
+# CHAINS
+threadoorChain = threadoor.createChain(
     llm=llm,
-    promptTemplate=writer.setPromptTemplate(
-        ["notes", "technique", "writerVoice"],
-        template=writer.template
+    promptTemplate=threadoor.setPromptTemplate(
+        inputVariables=["noteStructure", "mdNotes"],
+        template=threadoor.template
     ),
-    output_key="draft"
+    output_key="thread"
 )
 
-editorChain = editor.createChain(
+hookoorChain = hookoor.createChain(
     llm=llm,
-    promptTemplate=editor.setPromptTemplate(
-        ["draft"],
-        template=editor.template
+    promptTemplate=hookoor.setPromptTemplate(
+        inputVariables=["thread"],
+        template=hookoor.template
     ),
-    output_key="edit"
+    output_key="hook"
 )
 
-productionChain = production.createChain(
+promptoorChain = promptoor.createChain(
     llm=llm,
-    promptTemplate=production.setPromptTemplate(
-        ["draft", "edit"],
-        template=production.template
+    promptTemplate=promptoor.setPromptTemplate(
+        inputVariables=["thread"],
+        template=promptoor.template
     ),
-    output_key="final"
+    output_key="prompt"
 )
 
-# Running the chains
-response = SequentialChain(
-    memory=SimpleMemory(memories={"notes":markDownFile}),
+chain = SequentialChain(
+    memory=SimpleMemory(memories={"mdNotes":markDownFile}),
     chains=[
-        writerChain, editorChain, productionChain
+        threadoorChain,
+        hookoorChain,
+        promptoorChain
     ],
-    input_variables=["technique", "writerVoice"],
-    output_variables=["final"],
+    input_variables=["noteStructure"],
+    output_variables=["thread", "hook", "prompt"],
     verbose=True
 )
+
+# FILE PRINTING
 
 # Get the current date and time
 now = datetime.datetime.now()
@@ -124,17 +139,22 @@ now = datetime.datetime.now()
 date_string = now.strftime('%Y-%m-%d')
 
 # Create a file with today's date in the name
-filename = f'{date_string}.txt'
+filename = f'{date_string}'
 
 # Get the file name
 md_file_name = os.path.basename(md_file_path)
 
-# Writing to a file
-with open(f'{filename}_{md_file_name}.txt', 'w') as f:
-    f.write(
-        response(
-            {
-                "technique":"persuasive",
-                "writerVoice":"Mark Manson"
-            })['final']
-    )
+repsonse = list(
+    chain({"noteStructure":"tone, voice, vocabulary, and sentence structure"}).items())[-3:]
+
+# Open a new file for writing
+with open('output.txt', 'w') as f:
+    # Write the last three key-value pairs to the file, one per line
+    for key, value in repsonse:
+        # Write the key with '# Key:' prefix and newline character
+        f.write(f"# Key: {key}\n")
+        # Write the value with '# Value' prefix and newline character
+        f.write(f"# Value:\n {value} \n")
+
+
+
