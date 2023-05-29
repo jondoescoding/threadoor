@@ -170,4 +170,5 @@ docs/
 models/
 test/
 src/threadoor/threads
+src/threadoor/images
 backup/
