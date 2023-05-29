@@ -23,6 +23,7 @@ transformers = "*"
 chainlit = "*"
 prompt-optimizer = "*"
 ctransformers = "*"
+replicate = "*"
 
 [dev-packages]
 
