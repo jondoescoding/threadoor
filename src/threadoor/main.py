@@ -2,19 +2,25 @@
 import glob
 import os
 import datetime
+from PIL import Image
+import requests
+from io import BytesIO
 # Langchain
 from langchain.llms import *
 from langchain.chains import SequentialChain
 from langchain.document_loaders import UnstructuredMarkdownLoader
 from langchain.memory import SimpleMemory
 # Custom Utilities
-import helper as hp 
+import helper as hp
 
 # ENVIRONMENT VARIABLES
 OPENAI_TOKEN = os.environ.get('openAi')
+REPLICATE_API_TOKEN = os.environ.get('replicate')
+os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_TOKEN
+
 
 # Set the directory path
-directory = r"C:\_CODING\PYTHON\PROJECTS\contentCreator\docs\toBeIngested"
+directory = os.environ.get("CONTENT_FOLDER")
 
 # Get a list of all markdown files in the directory using glob
 md_files = glob.glob(directory + '/*.md')
@@ -34,99 +40,101 @@ else:
     raise Exception('The directory does not contain any markdown files')
 
 # Setting up OpenAi
-llm = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=1000)
+llmOpenAi = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=500)
+
+llmVicuna = Replicate(model="replicate/vicuna-13b:6282abe6a492de4145d7bb601023762212f9ddbbe78278bd6771c8b3b2f2a13b",input={"max_length":"2000"}
+, verbose=True)
+
+llmFlan = Replicate(model="replicate/flan-t5-xl:7a216605843d87f5426a10d2cc6940485a232336ed04d655ef86b91e020e9210", input={"max_length":"2000"})
+
+llmMPT = Replicate(model="replicate/mpt-7b-storywriter:a38b8ba0d73d328040e40ecfbb2f63a938dec8695fe15dfbd4218fa0ac3e76bf",input={"max_length":"5000"})
+
+llmDelib = Replicate(model="mcai/deliberate-v2:8431dfba7ba601d1db4fc1eeca919a7fbbe91854a18ab25234c2c523b56b866b", )
 
 # ROLES BEGIN HERE
-
 """
 Threadoor 
 - Objective -> Take the notes I create from a file (markdown, txt, etc.) and convert them into a twitter thread.
 """
 
-threadoor = hp.Role(
-    llm=OpenAI,
+threadoor = hp.chain(
+    llm=llmFlan,
     template="""
-    Role Description: You are a content writing agent that summarizes the main ideas for the given context in a Twitter thread format.
-    Goal: Summarize the main points and ideas of the given markdown notes in a Twitter thread format capturing the {noteStructure} of the notes using no hashtags. As if explaining the concept to a 10 year old, break down the notes into smaller and digestible tweets using only the information provided in the markdown notes. The thread's content should be formatted as such:
-        - Provide a simple explanation of the concept as an introduction to what will be discussed by writing clear and concise tweets for each point without altering the original meaning.
-        - Highlight the key concepts or the headings from the notes within each tweet.
-        - Illustrate the concept to an example in real life.
-        - Ensure a logical flow and coherence in the Twitter thread while maintaining the essence of the notes.
+    Role: You are a content writing agent that creates the main ideas from given markdown notes in a Twitter thread format not using hashtags or exclaimation marks. 
+    ### Instructions ###
+    - Summarize the main points and ideas of the notes in a Twitter thread format.
+    - Highlight the key concepts from the notes
+    - Break the content into smaller and digestible tweets.
+    - Write clear and concise tweets for each point without altering the original meaning.
+    - Ensure a logical flow and coherence in the Twitter thread while maintaining the {noteStructure} of the notes.
+
     Markdown Notes: {mdNotes}
     Twitter thread:
 
-    """
-)
-
-"""
-Hookoor
-- Objective: Using the written Twitter thread to generate 3 possible hook tweets to capture the attention of a potential reader
-"""
-
-hookoor = hp.Role(
-    llm=llm,
-    template="""
-    Role Description: You are a content writing agent that uses the main ideas from a given Twitter thread to generate a headliner.
-    The 5 elements of writing an effective headline are: Be CLEAR, not Clever, Be CLEAR, not Clever, Specify the WHAT, Specify the WHY, throw a curve ball. 
-    The 6 proven ways to write an engaging headline: Open with 1 strong, declarative sentence, Open with a thought-provoking question, Open with a controversial opinion, Open with a moment in time, Open with a vulnerable statement
-    Goal: Take all five elements of effective headline writing and one of the six proven ways to write an engaging headline and create three headlines that reflect the Twitter thread provided
-    Twitter Thread: {thread}
-    Headlines: 
-    """
-)
-
-promptoor = hp.Role(
-    llm=llm,
-    template="""
-    Role: You are an agent who writes descriptive short text phrases which will used to generate images.
-    Format: (image we're prompting), (5 descriptive keywords or phrases), (art style), (artist name), (art medium)
-    Goal: Create a 60 word short text phrase depicting a furturistic scene based on the theme of a given Twitter Thread using the given Format. Here are some examples short text phrases:
-    Example 1: a commercial photograph of a burger with dripping hot sauce, natural light, hyper-detailed,
-    105 mm macro, shutter speed at 1/800 sec, ISO 6400, f/8 aperture, 8k, octane rendering
-    Example 2: a hyper-realistic image of kids happily playing on a wide green field, manual camera mode, ISO 400, shutter speed at 1/200, aperture f/4, sunny
-    Example 3: a full-body shot of a fashion model walking on a runway wearing modern streetwear, fierce face, shot on a mirrorless camera, continuous focus mode
-    Twitter Thread: {thread}
-    Generated text phrase: 
-    """
-)
-
-# CHAINS
-threadoorChain = threadoor.createChain(
-    llm=llm,
-    promptTemplate=threadoor.setPromptTemplate(
-        inputVariables=["noteStructure", "mdNotes"],
-        template=threadoor.template
-    ),
+    """,
+    inputVariables=["noteStructure", "mdNotes"],
     output_key="thread"
 )
 
-hookoorChain = hookoor.createChain(
-    llm=llm,
-    promptTemplate=hookoor.setPromptTemplate(
-        inputVariables=["thread"],
-        template=hookoor.template
-    ),
+hookoor = hp.chain(
+    llm=llmOpenAi,
+    template="""
+    Role Description: You are a content writing agent that uses a given Twitter thread to construct an engaging introductory tweet which does not contain any exclaimation marks or hashtags.
+    Goal: Create three short introductory tweets based on the Twitter thread step by step.
+    Example #1:
+    - Most people think X [about something well-known]
+    - But "did you know" that's wrong?
+    - Here's the REAL reason XYZ happened
+    Example #2:
+    - To solve X [well-known & difficult] problem
+    - I do Y [unconventional] activity
+    - To achieve Z [highly desirable] outcome
+    Example #3:
+    "Want to solve X? Follow 1-2-3."
+    Every great business How To article or thread can be reduced down to this simple formula. 
+    - Name the problem
+    - Pinpoint actionable steps
+    - Celebrate outcome
+    Twitter Thread: {thread}
+    Introductory Tweet:
+
+    """,
+    inputVariables=['thread'],
     output_key="hook"
 )
 
-promptoorChain = promptoor.createChain(
-    llm=llm,
-    promptTemplate=promptoor.setPromptTemplate(
-        inputVariables=["thread"],
-        template=promptoor.template
-    ),
+promptoor = hp.chain(
+    llm=llmOpenAi,
+    template="""
+    Role: You are an agent who writes descriptive short text phrases which will used to generate images.
+    Format: (cyberpunk scene we are depicting), (5 descriptive keywords or phrases), (famous art style), (famous japanese manga artist name), (art medium) 
+    Goal: Create a 60 word short text phrase depicting a furturistic scene based on the content of a given Twitter thread based on the Format.
+    Twitter Thread: {thread}
+    Generated text phrase:
+
+    """,
+    inputVariables=["thread"],
     output_key="prompt"
 )
+
+imgGenoor = hp.chain(
+    llm=llmDelib,
+    template="{prompt}",
+    inputVariables=["prompt"],
+    output_key="img"
+)
+
 
 chain = SequentialChain(
     memory=SimpleMemory(memories={"mdNotes":markDownFile}),
     chains=[
-        threadoorChain,
-        hookoorChain,
-        promptoorChain
+        threadoor,
+        hookoor,
+        promptoor,
+        imgGenoor
     ],
     input_variables=["noteStructure"],
-    output_variables=["thread", "hook", "prompt"],
+    output_variables=["thread", "hook", "prompt", "img"],
     verbose=True
 )
 
@@ -145,13 +153,22 @@ filename = f'{date_string}'
 md_file_name = os.path.basename(md_file_path)
 
 repsonse = list(
-    chain({"noteStructure":"tone, voice, vocabulary, and sentence structure"}).items())[-3:]
+    chain({"noteStructure":"tone, voice, vocabulary and sentence structure"}).items())[-4:]
 
 # Open a new file for writing
-with open('output.txt', 'w') as f:
+with open(f'src\\threadoor\\threads\\{filename}_{md_file_name}', 'w') as f:
     # Write the last three key-value pairs to the file, one per line
     for key, value in repsonse:
         # Write the key with '# Key:' prefix and newline character
-        f.write(f"# Key: {key}\n")
+        f.write(f"\n# Key: {key}\n")
         # Write the value with '# Value' prefix and newline character
-        f.write(f"# Value:\n {value} \n")
+        f.write(f"# Value: \n{value} \n")
+
+# Send a request to the server and get the response -> the number represents the position in the list of where the image is (the third position in the list is the img as of 29/05/23)
+response = requests.get(repsonse[3][1])
+
+# Open the image using Pillow
+img = Image.open(BytesIO(response.content))
+
+# Save the image to disk
+img.save('src\\threadoor\\images\\hookImage.png')

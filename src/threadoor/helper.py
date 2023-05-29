@@ -6,34 +6,23 @@ from typing import List
 from langchain import LLMChain, llms
 from langchain import PromptTemplate
 
-@dataclass
-class Role:
-    """Wrapper for generating chains
-    """
-    llm: llms
-    template: str
-
-    def setPromptTemplate(cls, inputVariables:List[str], template:str):
-        """Setting the promptTemplate
+def chain(llm:llms, template:str, inputVariables: List[str], output_key:str):
+        """Create a LLM Chain
 
         Args:
-            inputVariables (list): list of variable which will be used by the prompt template
-            template (str): the long ass template
+            llm (llms): One of Langchain's integration for LLMs
+            template (str): what will be passed to the LLMs
+            inputVariables (List[str]): The input for the chain
+            output_key (str): the name of the final output from the chain
 
         Returns:
-            _type_: a prompt template object to be used by a chain
+            _type_: A LLMChain
         """
-        return PromptTemplate(input_variables=inputVariables, template=template)
-    
-    def createChain(cls, llm:llms, promptTemplate:str, output_key:str):
-        """Creates a LLMChain
-
-        Args:
-            llm (llms): whatever LLM being used to generate results
-            promptTemplate (str): the template being used
-            output_key (str): the name of the output model
-
-        Returns:
-            _type_: An LLMChain
-        """
-        return LLMChain(llm=llm, prompt=promptTemplate, output_key=output_key)
+        return LLMChain(
+            llm=llm,
+            prompt=PromptTemplate(
+                input_variables=inputVariables,
+                template=template
+            ),
+            output_key=output_key
+        )
