@@ -40,12 +40,10 @@ else:
     raise Exception('The directory does not contain any markdown files')
 
 # Setting up OpenAi
-llmOpenAi = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=500)
+llmOpenAi = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.65, max_tokens=500)
 
 llmVicuna = Replicate(model="replicate/vicuna-13b:6282abe6a492de4145d7bb601023762212f9ddbbe78278bd6771c8b3b2f2a13b",input={"max_length":"2000"}
 , verbose=True)
-
-llmFlan = Replicate(model="replicate/flan-t5-xl:7a216605843d87f5426a10d2cc6940485a232336ed04d655ef86b91e020e9210", input={"max_length":"2000"})
 
 llmMPT = Replicate(model="replicate/mpt-7b-storywriter:a38b8ba0d73d328040e40ecfbb2f63a938dec8695fe15dfbd4218fa0ac3e76bf",input={"max_length":"5000"})
 
@@ -58,7 +56,7 @@ Threadoor
 """
 
 threadoor = hp.chain(
-    llm=llmFlan,
+    llm=llmVicuna,
     template="""
     Role: You are a content writing agent that creates the main ideas from given markdown notes in a Twitter thread format not using hashtags or exclaimation marks. 
     ### Instructions ###
