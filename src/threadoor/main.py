@@ -44,7 +44,7 @@ else:
     raise Exception('The directory does not contain any markdown files')
 
 # Setting up OpenAi
-llmOpenAi = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.75, max_tokens=2000)
+llmOpenAi = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.65, max_tokens=500)
 
 llmVicuna = Replicate(model="replicate/vicuna-13b:6282abe6a492de4145d7bb601023762212f9ddbbe78278bd6771c8b3b2f2a13b",input={"max_length":2000}
 , verbose=True)
