@@ -10,6 +10,10 @@ from langchain.llms import *
 from langchain.chains import SequentialChain
 from langchain.document_loaders import UnstructuredMarkdownLoader
 from langchain.memory import SimpleMemory
+from langchain.text_splitter import (
+    RecursiveCharacterTextSplitter,
+    Language,
+)
 # Custom Utilities
 import helper as hp
 
@@ -40,16 +44,14 @@ else:
     raise Exception('The directory does not contain any markdown files')
 
 # Setting up OpenAi
-llmOpenAi = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=500)
+llmOpenAi = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.75, max_tokens=2000)
 
-llmVicuna = Replicate(model="replicate/vicuna-13b:6282abe6a492de4145d7bb601023762212f9ddbbe78278bd6771c8b3b2f2a13b",input={"max_length":"2000"}
+llmVicuna = Replicate(model="replicate/vicuna-13b:6282abe6a492de4145d7bb601023762212f9ddbbe78278bd6771c8b3b2f2a13b",input={"max_length":2000}
 , verbose=True)
 
-llmFlan = Replicate(model="replicate/flan-t5-xl:7a216605843d87f5426a10d2cc6940485a232336ed04d655ef86b91e020e9210", input={"max_length":"2000"})
+llmMPT = Replicate(model="replicate/mpt-7b-storywriter:a38b8ba0d73d328040e40ecfbb2f63a938dec8695fe15dfbd4218fa0ac3e76bf",input={"max_length":2500})
 
-llmMPT = Replicate(model="replicate/mpt-7b-storywriter:a38b8ba0d73d328040e40ecfbb2f63a938dec8695fe15dfbd4218fa0ac3e76bf",input={"max_length":"5000"})
-
-llmDelib = Replicate(model="mcai/deliberate-v2:8431dfba7ba601d1db4fc1eeca919a7fbbe91854a18ab25234c2c523b56b866b", )
+llmText2Img = Replicate(model="ai-forever/kandinsky-2:601eea49d49003e6ea75a11527209c4f510a93e2112c969d548fbb45b9c4f19f")
 
 # ROLES BEGIN HERE
 """
@@ -58,16 +60,15 @@ Threadoor
 """
 
 threadoor = hp.chain(
-    llm=llmFlan,
+    llm=llmOpenAi,
     template="""
-    Role: You are a content writing agent that creates the main ideas from given markdown notes in a Twitter thread format not using hashtags or exclaimation marks. 
     ### Instructions ###
-    - Summarize the main points and ideas of the notes in a Twitter thread format.
-    - Highlight the key concepts from the notes
+    - You are writing agent that doesn't exclaimation points, hashtags or emojis.
+    - Use the main points and ideas of the notes in a Twitter thread format.
+    - Highlight each of the key concepts from the notes
     - Break the content into smaller and digestible tweets.
     - Write clear and concise tweets for each point without altering the original meaning.
     - Ensure a logical flow and coherence in the Twitter thread while maintaining the {noteStructure} of the notes.
-
     Markdown Notes: {mdNotes}
     Twitter thread:
 
@@ -79,22 +80,9 @@ threadoor = hp.chain(
 hookoor = hp.chain(
     llm=llmOpenAi,
     template="""
-    Role Description: You are a content writing agent that uses a given Twitter thread to construct an engaging introductory tweet which does not contain any exclaimation marks or hashtags.
-    Goal: Create three short introductory tweets based on the Twitter thread step by step.
-    Example #1:
-    - Most people think X [about something well-known]
-    - But "did you know" that's wrong?
-    - Here's the REAL reason XYZ happened
-    Example #2:
-    - To solve X [well-known & difficult] problem
-    - I do Y [unconventional] activity
-    - To achieve Z [highly desirable] outcome
-    Example #3:
-    "Want to solve X? Follow 1-2-3."
-    Every great business How To article or thread can be reduced down to this simple formula. 
-    - Name the problem
-    - Pinpoint actionable steps
-    - Celebrate outcome
+    Role: You are a content writing agent that uses a given Twitter thread to construct an engaging introductory tweet that does not contain any exclaimation marks or hashtags.
+    Goal: Create 3 short introductory tweets based on the Twitter thread using persuasive writing style.
+    Formula: Problem: (Name the problem), Steps: (Pinpoint actionable steps), Output: (Celebrate outcome)
     Twitter Thread: {thread}
     Introductory Tweet:
 
@@ -107,8 +95,8 @@ promptoor = hp.chain(
     llm=llmOpenAi,
     template="""
     Role: You are an agent who writes descriptive short text phrases which will used to generate images.
-    Format: (cyberpunk scene we are depicting), (5 descriptive keywords or phrases), (famous art style), (famous japanese manga artist name), (art medium) 
-    Goal: Create a 60 word short text phrase depicting a furturistic scene based on the content of a given Twitter thread based on the Format.
+    Format: Scene: (cyberpunk scene we are depicting), Keywords: (5 descriptive keywords related to robotics, ai, normcore and cyberpunk), Art Style: (famous art style), Artist: (famous japanese manga artist name), Medium: (art medium) 
+    Goal: Using the Format, create a 60 word short text phrase depicting a furturistic scene based on the theme of the Twitter Thread.
     Twitter Thread: {thread}
     Generated text phrase:
 
@@ -118,13 +106,13 @@ promptoor = hp.chain(
 )
 
 imgGenoor = hp.chain(
-    llm=llmDelib,
+    llm=llmText2Img,
     template="{prompt}",
     inputVariables=["prompt"],
     output_key="img"
 )
 
-
+# CHAIN START HERE
 chain = SequentialChain(
     memory=SimpleMemory(memories={"mdNotes":markDownFile}),
     chains=[
@@ -156,7 +144,7 @@ repsonse = list(
     chain({"noteStructure":"tone, voice, vocabulary and sentence structure"}).items())[-4:]
 
 # Open a new file for writing
-with open(f'src\\threadoor\\threads\\{filename}_{md_file_name}', 'w') as f:
+with open(f'src\\threadoor\\threads\\{filename}_{md_file_name}', 'w', encoding="utf-8") as f:
     # Write the last three key-value pairs to the file, one per line
     for key, value in repsonse:
         # Write the key with '# Key:' prefix and newline character

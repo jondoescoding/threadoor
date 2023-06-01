@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-langchain = "*"
 pygpt4all = "*"
 pyllamacpp = "*"
 python-dotenv = "*"
@@ -24,6 +23,7 @@ chainlit = "*"
 prompt-optimizer = "*"
 ctransformers = "*"
 replicate = "*"
+langchain = "==0.0.187"
 
 [dev-packages]
 
