@@ -45,8 +45,6 @@ else:
 # Setting up LLMs
 llmOpenAi = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=3000)
 
-llmVicuna = Replicate(model="replicate/vicuna-13b:6282abe6a492de4145d7bb601023762212f9ddbbe78278bd6771c8b3b2f2a13b",input={"max_length":2000}, verbose=True)
-
 llmText2Img = Replicate(model="mcai/dreamshaper-v6:8b0deb0306a54dec7c6e5c955b83320f5d8b7fc659769667e0e71e56d0f488ed")
 
 # ROLES BEGIN HERE
