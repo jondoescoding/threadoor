@@ -20,11 +20,13 @@ OPENAI_TOKEN = os.environ.get('openAi')
 REPLICATE_API_TOKEN = os.environ.get('replicate')
 os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_TOKEN
 
-# Set the directory path
-directory = os.environ.get("CONTENT_FOLDER")
+# Set the directory paths
+contentDirectory = os.environ.get("CONTENT_FOLDER")
+threadDirectory = os.environ.get("THREAD_FOLDER")
+imagesDirectory = os.environ.get("IMAGES_FOLDER")
 
 # Get a list of all markdown files in the directory using glob
-md_files = glob.glob(directory + '/*.md')
+md_files = glob.glob(contentDirectory + '/*.md')
 
 # Check if there is more than one markdown file in the directory
 if len(md_files) > 1:
@@ -41,11 +43,11 @@ else:
     raise Exception('The directory does not contain any markdown files')
 
 # Setting up LLMs
-llmOpenAi = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.65, max_tokens=500)
+llmOpenAi = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=3000)
 
 llmVicuna = Replicate(model="replicate/vicuna-13b:6282abe6a492de4145d7bb601023762212f9ddbbe78278bd6771c8b3b2f2a13b",input={"max_length":2000}, verbose=True)
 
-llmText2Img = Replicate(model="ai-forever/kandinsky-2:601eea49d49003e6ea75a11527209c4f510a93e2112c969d548fbb45b9c4f19f")
+llmText2Img = Replicate(model="mcai/dreamshaper-v6:8b0deb0306a54dec7c6e5c955b83320f5d8b7fc659769667e0e71e56d0f488ed")
 
 # ROLES BEGIN HERE
 """
@@ -56,13 +58,11 @@ Threadoor
 threadoor = hp.chain(
     llm=llmOpenAi,
     template="""
-    ### Instructions ###
-    - You are writing agent that doesn't use exclaimation points, hashtags or emojis.
-    - Paraphase the main points and ideas of the notes as a Twitter thread.
-    - Highlight each of the key concepts from the notes in each tweet.
-    - Break the content into smaller and digestible tweets.
-    - Write clear and concise tweets for each point without altering the original meaning.
-    - Ensure a logical flow and coherence in the Twitter thread while maintaining the {noteStructure} of the notes.
+    Role: 
+    You are a Twitter Thread Creator. You have the ability to explain difficult topics down to their fundamentals using first principle thinking applying the Feynman Technique.
+    Goal:
+    - Convert the markdown notes into a Twitter thread without the use of exclaimation points, hashtags and emojis.
+    - Ensure a logical flow and coherence of the Twitter thread while maintaining the {noteStructure} of the notes.
     Markdown Notes: {mdNotes}
     Twitter thread:
 
@@ -74,11 +74,15 @@ threadoor = hp.chain(
 hookoor = hp.chain(
     llm=llmOpenAi,
     template="""
-    Role: You are a content writing agent that uses a given Twitter thread to construct an engaging introductory tweet that does not contain any exclaimation marks or hashtags.
-    Goal: Create 3 short introductory tweets based on the Twitter thread using persuasive writing style.
-    Formula: Problem: (Name the problem), Steps: (Pinpoint actionable steps), Output: (Celebrate outcome)
+    Role: You are a Twitter Thread headline generator.
+    Goal: Using the given Twitter thread construct 2 introductory tweet without using exclaimation points, hashtags in a persuasive writing style based the given Format.
+    Format: 
+        Problem: (Name the problem)
+        Steps: (Pinpoint actionable steps)
+        Output: (Celebrate outcome)
     Twitter Thread: {thread}
     Introductory Tweet:
+    #1: 
 
     """,
     inputVariables=['thread'],
@@ -89,13 +93,16 @@ promptoor = hp.chain(
     llm=llmOpenAi,
     template="""
     Role: You are an agent who writes descriptive short text phrases which will used to generate images.
-    Format: Scene: (cyberpunk scene we are depicting), Keywords: (5 descriptive keywords related to robotics, ai, normcore and cyberpunk), Art Style: (famous art style), Artist: (famous japanese manga artist name), Medium: (art medium) 
-    Goal: Using the Format, create a 60 word short text phrase depicting a furturistic scene based on the theme of the Twitter Thread.
-    Twitter Thread: {thread}
-    Generated text phrase:
+    Format: 
+        Scene = {scene}
+        Art Style = (art style eg: normcore, cubism, abstract, surrealism, minimalism, realism, pop art)
+        Artist = (japanese manga author's name eg: Eiichiro Oda, Hiromu Arakawa, Akira Toriyama, Katsuhiro Otomo)
+        Medium = (art medium eg: illustration, painting, photograph, pastel, sculpture, drawing, ink, digital art) 
+    Goal: Using the Format, create a 60 word short text phrase depicting a furturistic scene. The more detailed and imaginative your description, the more interesting the resulting image will be.
+    Generated text phrase: 
 
     """,
-    inputVariables=["thread"],
+    inputVariables=["scene"],
     output_key="prompt"
 )
 
@@ -115,30 +122,23 @@ chain = SequentialChain(
         promptoor,
         imgGenoor
     ],
-    input_variables=["noteStructure"],
+    input_variables=["noteStructure", "scene"],
     output_variables=["thread", "hook", "prompt", "img"],
     verbose=True
 )
 
 # FILE PRINTING
-
 # Get the current date and time
-now = datetime.datetime.now()
-
-# Create a string with today's date in the format YYYY-MM-DD
-date_string = now.strftime('%Y-%m-%d')
-
-# Create a file with today's date in the name
-filename = f'{date_string}'
+today = datetime.datetime.now().strftime('%Y-%m-%d')
 
 # Get the file name
-md_file_name = os.path.basename(md_file_path)
+mdFilename = os.path.basename(md_file_path)
 
 repsonse = list(
-    chain({"noteStructure":"tone, voice, vocabulary and sentence structure"}).items())[-4:]
+    chain({"noteStructure":"tone and vocabulary but change the voice to reflect Mark Manson", "scene":"futuristic details, cyberpunk atmosphere"}).items())[-4:]
 
 # Open a new file for writing
-with open(f'src\\threadoor\\threads\\{filename}_{md_file_name}', 'w', encoding="utf-8") as f:
+with open(f'{threadDirectory}\\{today}_{mdFilename}', 'w', encoding="utf-8") as f:
     # Write the last three key-value pairs to the file, one per line
     for key, value in repsonse:
         # Write the key with '# Key:' prefix and newline character
@@ -153,4 +153,4 @@ response = requests.get(repsonse[3][1])
 img = Image.open(BytesIO(response.content))
 
 # Save the image to disk
-img.save('src\\threadoor\\images\\hookImage.png')
+img.save(f'{imagesDirectory}\\{today}_hookImage.png')
