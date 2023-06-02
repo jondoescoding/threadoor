@@ -4,26 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pygpt4all = "*"
-pyllamacpp = "*"
-python-dotenv = "*"
-pymupdf = "*"
-beautifulsoup4 = "*"
-"pdfminer.six" = "*"
-chromadb = "*"
-gptcache = "*"
-llama-cpp-python = "*"
-pdfplumber = "*"
-tiktoken = "*"
-sentence-transformers = "*"
+langchain = "*"
 unstructured = "*"
-huggingface-hub = "*"
-transformers = "*"
-chainlit = "*"
-prompt-optimizer = "*"
-ctransformers = "*"
-replicate = "*"
-langchain = "==0.0.187"
+python-dotenv = "*"
+requests = "*"
+pillow = "*"
 
 [dev-packages]
 

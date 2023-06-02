@@ -2,26 +2,23 @@
 import glob
 import os
 import datetime
-from PIL import Image
 import requests
+from dotenv import load_dotenv
+from PIL import Image
 from io import BytesIO
 # Langchain
 from langchain.llms import *
 from langchain.chains import SequentialChain
 from langchain.document_loaders import UnstructuredMarkdownLoader
 from langchain.memory import SimpleMemory
-from langchain.text_splitter import (
-    RecursiveCharacterTextSplitter,
-    Language,
-)
 # Custom Utilities
 import helper as hp
 
 # ENVIRONMENT VARIABLES
+load_dotenv()  # take environment variables from .env
 OPENAI_TOKEN = os.environ.get('openAi')
 REPLICATE_API_TOKEN = os.environ.get('replicate')
 os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_TOKEN
-
 
 # Set the directory path
 directory = os.environ.get("CONTENT_FOLDER")
@@ -43,13 +40,10 @@ elif len(md_files) == 1:
 else:
     raise Exception('The directory does not contain any markdown files')
 
-# Setting up OpenAi
+# Setting up LLMs
 llmOpenAi = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.65, max_tokens=500)
 
-llmVicuna = Replicate(model="replicate/vicuna-13b:6282abe6a492de4145d7bb601023762212f9ddbbe78278bd6771c8b3b2f2a13b",input={"max_length":2000}
-, verbose=True)
-
-llmMPT = Replicate(model="replicate/mpt-7b-storywriter:a38b8ba0d73d328040e40ecfbb2f63a938dec8695fe15dfbd4218fa0ac3e76bf",input={"max_length":2500})
+llmVicuna = Replicate(model="replicate/vicuna-13b:6282abe6a492de4145d7bb601023762212f9ddbbe78278bd6771c8b3b2f2a13b",input={"max_length":2000}, verbose=True)
 
 llmText2Img = Replicate(model="ai-forever/kandinsky-2:601eea49d49003e6ea75a11527209c4f510a93e2112c969d548fbb45b9c4f19f")
 
@@ -63,9 +57,9 @@ threadoor = hp.chain(
     llm=llmOpenAi,
     template="""
     ### Instructions ###
-    - You are writing agent that doesn't exclaimation points, hashtags or emojis.
-    - Use the main points and ideas of the notes in a Twitter thread format.
-    - Highlight each of the key concepts from the notes
+    - You are writing agent that doesn't use exclaimation points, hashtags or emojis.
+    - Paraphase the main points and ideas of the notes as a Twitter thread.
+    - Highlight each of the key concepts from the notes in each tweet.
     - Break the content into smaller and digestible tweets.
     - Write clear and concise tweets for each point without altering the original meaning.
     - Ensure a logical flow and coherence in the Twitter thread while maintaining the {noteStructure} of the notes.
