@@ -72,15 +72,14 @@ threadoor = hp.chain(
 hookoor = hp.chain(
     llm=llmOpenAi,
     template="""
-    Role: You are a Twitter Thread headline generator.
-    Goal: Using the given Twitter thread construct 2 introductory tweet without using exclaimation points, hashtags in a persuasive writing style based the given Format.
+    Role: You are a Twitter Thread content generator.
+    Goal: Using the given Twitter thread construct 3 introductory tweet without using exclaimation points and hashtags in a persuasive writing style based the given Format. Build upon each introductory tweet.
     Format: 
         Problem: (Name the problem)
         Steps: (Pinpoint actionable steps)
         Output: (Celebrate outcome)
     Twitter Thread: {thread}
-    Introductory Tweet:
-    #1: 
+    Introductory Tweets:
 
     """,
     inputVariables=['thread'],
@@ -92,11 +91,12 @@ promptoor = hp.chain(
     template="""
     Role: You are an agent who writes descriptive short text phrases which will used to generate images.
     Format: 
-        Scene = {scene}
-        Art Style = (art style eg: normcore, cubism, abstract, surrealism, minimalism, realism, pop art)
-        Artist = (japanese manga author's name eg: Eiichiro Oda, Hiromu Arakawa, Akira Toriyama, Katsuhiro Otomo)
-        Medium = (art medium eg: illustration, painting, photograph, pastel, sculpture, drawing, ink, digital art) 
-    Goal: Using the Format, create a 60 word short text phrase depicting a furturistic scene. The more detailed and imaginative your description, the more interesting the resulting image will be.
+        Selected_Country = (Choose a random country in the world)
+        Landmark = (Pick a single landmark from Selected_Country)
+        Art Style = (insert a random art style)
+        Artist = (insert a famous japanese manga artist's name)
+        Art Medium = (insert either illustration or digital art)
+    Goal: Fill in the content from the Format to be used to create a 60 word short text phrase depicting a {scene}. The more detailed and imaginative your description, the more interesting the resulting image will be.
     Generated text phrase: 
 
     """,
@@ -133,12 +133,12 @@ today = datetime.datetime.now().strftime('%Y-%m-%d')
 mdFilename = os.path.basename(md_file_path)
 
 repsonse = list(
-    chain({"noteStructure":"tone and vocabulary but change the voice to reflect Mark Manson", "scene":"futuristic details, cyberpunk atmosphere"}).items())[-4:]
+    chain({"noteStructure":"tone, voice and vocabulary of Mark Manson's writing style", "scene":"futuristic scene with a cyberpunk atmosphere"}).items())[-4:]
 
 # Open a new file for writing
 with open(f'{threadDirectory}\\{today}_{mdFilename}', 'w', encoding="utf-8") as f:
-    # Write the last three key-value pairs to the file, one per line
-    for key, value in repsonse:
+    # Write the last three key-value pairs to the file, one per line for only the first two output variables
+    for key, value in repsonse[:2]:
         # Write the key with '# Key:' prefix and newline character
         f.write(f"\n# Key: {key}\n")
         # Write the value with '# Value' prefix and newline character
