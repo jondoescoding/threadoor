@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass
 from typing import List
 # LangChain
-from langchain import LLMChain, llms
+from langchain import LLMChain, OpenAI, llms
 from langchain import PromptTemplate
 
 def chain(llm:llms, template:str, inputVariables: List[str], output_key:str):
@@ -26,3 +26,11 @@ def chain(llm:llms, template:str, inputVariables: List[str], output_key:str):
             ),
             output_key=output_key
         )
+
+def initializeLLM(nameOfLLM:str, temperature:float, max_tokens:int, openai_api_key:str):
+        match nameOfLLM:
+                case "OpenAI", "openAI":
+                        llm = OpenAI(openai_api_key=openai_api_key, temperature=temperature, max_tokens=max_tokens, verbose=True)
+                        return llm
+                case default:
+                    return Exception("This LLM doesn't exist!")
