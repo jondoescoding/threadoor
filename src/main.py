@@ -8,6 +8,7 @@ from PIL import Image
 from io import BytesIO
 # Langchain
 from langchain.llms import *
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import SequentialChain
 from langchain.document_loaders import UnstructuredMarkdownLoader
 from langchain.memory import SimpleMemory
@@ -36,16 +37,20 @@ if len(md_files) > 1:
 elif len(md_files) == 1:
     md_file_path = md_files[0]
     print(f'The markdown file path is: {md_file_path}')
+    textSplitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=128)
     loader = UnstructuredMarkdownLoader(md_file_path)
-    markDownFile = loader.load()
+    markDownFile = loader.load_and_split(textSplitter)
+
 # If there are no markdown files, handle the empty directory case
 else:
     raise Exception('The directory does not contain any markdown files')
 
 # Setting up LLMs
-llmOpenAi = OpenAI(openai_api_key=OPENAI_TOKEN, temperature=0.7, max_tokens=3000)
-
-llmText2Img = Replicate(model="mcai/dreamshaper-v6:8b0deb0306a54dec7c6e5c955b83320f5d8b7fc659769667e0e71e56d0f488ed")
+llmOpenAi = hp.initializeLLM(
+    nameOfLLM="OpenAI", 
+    temperature=0.75,
+    max_tokens=2000,
+    openai_api_key=OPENAI_TOKEN)
 
 # ROLES BEGIN HERE
 """
@@ -56,14 +61,9 @@ Threadoor
 threadoor = hp.chain(
     llm=llmOpenAi,
     template="""
-    Role: 
-    You are a Twitter Thread Creator. You have the ability to explain difficult topics down to their fundamentals using first principle thinking applying the Feynman Technique.
-    Goal:
-    - Convert the markdown notes into a Twitter thread without the use of exclaimation points, hashtags and emojis.
-    - Ensure a logical flow and coherence of the Twitter thread while maintaining the {noteStructure} of the notes.
+    Goal: Paraphrase, shorten and convert the markdown notes into a Twitter Thread without the use of exclaimation points, hashtags and emojis. Ensure a logical flow and coherence of the Twitter thread while maintaining the {noteStructure} of the notes.
     Markdown Notes: {mdNotes}
     Twitter thread:
-
     """,
     inputVariables=["noteStructure", "mdNotes"],
     output_key="thread"
@@ -72,12 +72,11 @@ threadoor = hp.chain(
 hookoor = hp.chain(
     llm=llmOpenAi,
     template="""
-    Role: You are a Twitter Thread content generator.
-    Goal: Using the given Twitter thread construct 3 introductory tweet without using exclaimation points and hashtags in a persuasive writing style based the given Format. Build upon each introductory tweet.
+    Role: You are a headline generator for Twitter Thread.
+    Goal: Using the given Twitter thread construct 3 introductory tweet without using exclaimation points and hashtags in Gary Halbert's writing style to capture the attention of a tech user based the given Format.
     Format: 
         Problem: (Name the problem)
-        Steps: (Pinpoint actionable steps)
-        Output: (Celebrate outcome)
+        Choose one option for the end of the tweet: 👇🧵, ↓↓↓
     Twitter Thread: {thread}
     Introductory Tweets:
 
@@ -86,42 +85,15 @@ hookoor = hp.chain(
     output_key="hook"
 )
 
-promptoor = hp.chain(
-    llm=llmOpenAi,
-    template="""
-    Role: You are an agent who writes descriptive short text phrases which will used to generate images.
-    Format: 
-        Selected_Country = (Choose a random country in the world)
-        Landmark = (Pick a single landmark from Selected_Country)
-        Art Style = (insert a random art style)
-        Artist = (insert a famous japanese manga artist's name)
-        Art Medium = (insert either illustration or digital art)
-    Goal: Fill in the content from the Format to be used to create a 60 word short text phrase depicting a {scene}. The more detailed and imaginative your description, the more interesting the resulting image will be.
-    Generated text phrase: 
-
-    """,
-    inputVariables=["scene"],
-    output_key="prompt"
-)
-
-imgGenoor = hp.chain(
-    llm=llmText2Img,
-    template="{prompt}",
-    inputVariables=["prompt"],
-    output_key="img"
-)
-
 # CHAIN START HERE
 chain = SequentialChain(
     memory=SimpleMemory(memories={"mdNotes":markDownFile}),
     chains=[
         threadoor,
-        hookoor,
-        promptoor,
-        imgGenoor
+        hookoor
     ],
-    input_variables=["noteStructure", "scene"],
-    output_variables=["thread", "hook", "prompt", "img"],
+    input_variables=["noteStructure"],
+    output_variables=["thread", "hook"],
     verbose=True
 )
 
@@ -133,9 +105,11 @@ today = datetime.datetime.now().strftime('%Y-%m-%d')
 mdFilename = os.path.basename(md_file_path)
 
 repsonse = list(
-    chain({"noteStructure":"tone, voice and vocabulary of Mark Manson's writing style", "scene":"futuristic scene with a cyberpunk atmosphere"}).items())[-4:]
+    chain({"noteStructure":"tone, voice and vocabulary of the content's writing style"}).items())[-4:]
+
 
 # Open a new file for writing
+print("Writing To File")
 with open(f'{threadDirectory}\\{today}_{mdFilename}', 'w', encoding="utf-8") as f:
     # Write the last three key-value pairs to the file, one per line for only the first two output variables
     for key, value in repsonse[:2]:
@@ -151,4 +125,5 @@ response = requests.get(repsonse[3][1])
 img = Image.open(BytesIO(response.content))
 
 # Save the image to disk
+print("Saving image")
 img.save(f'{imagesDirectory}\\{today}_hookImage.png')
